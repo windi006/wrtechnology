@@ -1,0 +1,722 @@
+dashboard_content = """<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Penjual - WR Technology</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- RESET & GLOBAL STYLES --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0f0c1b;
+            --bg-secondary: #171326;
+            --bg-tertiary: #1f1a35;
+            --text-main: #f3f1f8;
+            --text-muted: #a6a2b5;
+            --color-primary: #7c4dff;
+            --color-primary-hover: #6533ff;
+            --color-success: #00e676;
+            --color-pending: #ffc107;
+            --color-danger: #ff1744;
+            --border-color: #2e284f;
+            --shadow-smooth: rgba(0, 0, 0, 0.4) 0px 8px 24px;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-speed);
+        }
+
+        .sidebar-logo {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-logo span {
+            color: var(--color-primary);
+            margin-left: 4px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .menu-item a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all var(--transition-speed);
+            gap: 12px;
+        }
+
+        .menu-item a:hover, .menu-item.active a {
+            color: var(--text-main);
+            background-color: var(--bg-tertiary);
+        }
+
+        .menu-item.active a {
+            background-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(124, 77, 255, 0.25);
+        }
+
+        .menu-icon {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* --- MAIN LAYOUT CONTAINER --- */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left var(--transition-speed), width var(--transition-speed);
+        }
+
+        /* --- TOP BAR --- */
+        .topbar {
+            height: var(--topbar-height);
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background-color: var(--bg-tertiary);
+            border: 2px solid var(--color-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .btn-logout:hover {
+            border-color: var(--color-danger);
+            color: var(--color-danger);
+            background-color: rgba(255, 23, 68, 0.05);
+        }
+
+        /* --- MAIN KONTEN UTAMA --- */
+        .content-body {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            flex-grow: 1;
+        }
+
+        /* Card Ringkasan Statistik */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-smooth);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--color-primary);
+        }
+
+        .stat-card.success::before { background-color: var(--color-success); }
+        .stat-card.pending::before { background-color: var(--color-pending); }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .stat-desc {
+            font-size: 12px;
+            color: var(--color-success);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-desc.neutral {
+            color: var(--text-muted);
+        }
+
+        /* Section Chart Ringkasan */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+        }
+
+        .chart-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow-smooth);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chart-caption {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 280px;
+        }
+
+        /* Section Tabel Transaksi */
+        .table-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow-smooth);
+        }
+
+        .table-header-box {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .data-table th {
+            background-color: var(--bg-tertiary);
+            color: var(--text-main);
+            padding: 14px 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover td {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+
+        .order-id-code {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: rgba(0, 230, 118, 0.1);
+            color: var(--color-success);
+        }
+
+        .badge-pending {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--color-pending);
+        }
+
+        .badge-danger {
+            background-color: rgba(255, 23, 68, 0.1);
+            color: var(--color-danger);
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .topbar {
+                padding: 0 20px;
+            }
+
+            .content-body {
+                padding: 20px;
+            }
+
+            /* Overlay effect when sidebar menu active in mobile view */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(10, 8, 18, 0.6);
+                backdrop-filter: blur(4px);
+                z-index: 950;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- OVERLAY UTK MOBILE -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 1. SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            WR<span>Technology</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="menu-item active">
+                <a href="#">
+                    <span class="menu-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="#">
+                    <span class="menu-icon">📦</span>
+                    <span>Produk</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="#">
+                    <span class="menu-icon">💸</span>
+                    <span>Transaksi</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="#">
+                    <span class="menu-icon">📈</span>
+                    <span>Laporan</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="#">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Pengaturan</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-wrapper">
+        
+        <!-- 2. TOP BAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Buka Menu">☰</button>
+                <h2 class="page-title">Dashboard Overview</h2>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="user-avatar">W</div>
+                    <span class="user-name">WR Admin Penjual</span>
+                </div>
+                <button class="btn-logout" onclick="alert('Melakukan Log Out sistem dummy...')">Keluar</button>
+            </div>
+        </header>
+
+        <!-- 3. KONTEN UTAMA -->
+        <main class="content-body">
+            
+            <!-- Ringkasan Statistik Card -->
+            <section class="stats-grid">
+                <!-- Card 1 -->
+                <div class="stat-card">
+                    <span class="stat-title">Total Penjualan</span>
+                    <span class="stat-value">Rp 12.450.000</span>
+                    <span class="stat-desc">▲ +14.2% dari bulan lalu</span>
+                </div>
+                <!-- Card 2 -->
+                <div class="stat-card success">
+                    <span class="stat-title">Total Transaksi</span>
+                    <span class="stat-value">94 Transaksi</span>
+                    <span class="stat-desc">▲ +8.5% peningkatan volume</span>
+                </div>
+                <!-- Card 3 -->
+                <div class="stat-card pending">
+                    <span class="stat-title">Produk Terjual</span>
+                    <span class="stat-value">132 Item</span>
+                    <span class="stat-desc neutral">Aset digital terunduh otomatis</span>
+                </div>
+            </section>
+
+            <!-- 4. CHART RINGKASAN -->
+            <section class="charts-grid">
+                <!-- Chart 1 Bulan Terakhir -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Penjualan 1 Bulan Terakhir</h3>
+                        <p class="chart-caption">Grafik agregat akumulasi pendapatan harian dalam skala bulanan berjalan.</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 1 Minggu Terakhir -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Penjualan 1 Minggu Terakhir</h3>
+                        <p class="chart-caption">Rasio komparasi distribusi volume penjualan per hari.</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. TABEL TRANSAKSI -->
+            <section class="table-card">
+                <div class="table-header-box">
+                    <h3 class="table-title">Transaksi Terbaru</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Produk</th>
+                                <th>Email</th>
+                                <th>Nomor HP</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="order-id-code">DE-1716382104512</span></td>
+                                <td>Sistem Blueprint Manajemen Kopi</td>
+                                <td>andika.pratama@gmail.com</td>
+                                <td>081234567890</td>
+                                <td><span class="badge badge-success">Sukses</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="order-id-code">DE-1716382098411</span></td>
+                                <td>E-Course Automasi Bisnis Keripik</td>
+                                <td>budi.santoso@yahoo.com</td>
+                                <td>085711223344</td>
+                                <td><span class="badge badge-success">Sukses</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="order-id-code">DE-1716381954200</span></td>
+                                <td>SaaS Web Starter Kit Bundle</td>
+                                <td>citra.lestari@outlook.com</td>
+                                <td>081988776655</td>
+                                <td><span class="badge badge-pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="order-id-code">DE-1716381801239</span></td>
+                                <td>Sistem Blueprint Manajemen Kopi</td>
+                                <td>dani.ramadhan@gmail.com</td>
+                                <td>082199887766</td>
+                                <td><span class="badge badge-success">Sukses</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="order-id-code">DE-1716381643198</span></td>
+                                <td>SaaS Web Starter Kit Bundle</td>
+                                <td>eko.prasetyo@hotmail.com</td>
+                                <td>081344556677</td>
+                                <td><span class="badge badge-danger">Gagal</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC & CONFIGURATION CHART.JS -->
+    <script>
+        // --- SIDEBAR COLLAPSIBLE INTERACTION FOR MOBILE ---
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        // --- KONFIGURASI CHART.JS (DUMMY DATA) ---
+        // Setting font warna default global agar serasi dengan tema gelap
+        Chart.defaults.color = '#a6a2b5';
+        Chart.defaults.font.family = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+        // 1. Chart 1 Bulan Terakhir (Line Chart)
+        const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(ctxMonthly, {
+            type: 'line',
+            data: {
+                labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+                datasets: [{
+                    label: 'Pendapatan (Rp)',
+                    data: [2100000, 3400000, 2850000, 4100000],
+                    borderColor: '#7c4dff',
+                    backgroundColor: 'rgba(124, 77, 255, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#b39ddb',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        grid: { color: '#2e284f' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + (value/1000000) + 'jt';
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 2. Chart 1 Minggu Terakhir (Bar Chart)
+        const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
+        new Chart(ctxWeekly, {
+            type: 'bar',
+            data: {
+                labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                datasets: [{
+                    label: 'Item Terjual',
+                    data: [12, 19, 8, 15, 22, 34, 22],
+                    backgroundColor: '#b39ddb',
+                    hoverBackgroundColor: '#7c4dff',
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: '#2e284f' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Mengatur interaktivitas menu sidebar agar terlihat aktif saat diklik (dummy route)
+        document.querySelectorAll('.sidebar-menu .menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-menu .menu-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Jika di mobile, tutup sidebar otomatis setelah menu diklik
+                if(window.innerWidth <= 768) {
+                    toggleSidebar();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+"""
+
+with open("dashboard.html", "w", encoding="utf-8") as f:
+    f.write(dashboard_content)
+print("File dashboard.html berhasil dibuat.")
